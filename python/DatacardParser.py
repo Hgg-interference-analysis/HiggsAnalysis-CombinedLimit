@@ -707,6 +707,7 @@ def parseCard(file, options):
     # set boolean to know about shape
     ret.hasShapes = len(ret.shapeMap) > 0
     # return result
+    #ret.print_structure()
     return ret
 
 

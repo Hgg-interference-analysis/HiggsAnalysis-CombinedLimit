@@ -467,6 +467,7 @@ class ShapeBuilder(ModelBuilder):
     ## -------- High level helpers ----------
     ## --------------------------------------
     def prepareAllShapes(self):
+        print("here0")
         shapeTypes = []
         shapeBins = {}
         shapeObs = {}
@@ -498,6 +499,7 @@ class ShapeBuilder(ModelBuilder):
                 elif shape.ClassName().startswith("TH1"):
                     shapeTypes.append("TH1")
                     shapeBins[b] = shape.GetNbinsX()
+                    print(f"nbins, ib, b: {shape.GetNbinsX()} {ib} {b}")
                     if channelBinParFlag:
                         self.selfNormBins.append(b)
                     norm = shape.Integral()
@@ -514,6 +516,7 @@ class ShapeBuilder(ModelBuilder):
                             if shape.GetBinContent(i) > 0:
                                 bgbins[i] = True
                 elif shape.InheritsFrom("RooDataHist"):
+                    print("datahist")
                     shapeTypes.append("RooDataHist")
                     # if doPadding: shapeBins[b] = shape.numEntries() --> Not clear this is needed at all for RooDataHists so just ignore
                     shapeObs[self.argSetToString(shape.get())] = shape.get()
@@ -524,19 +527,23 @@ class ShapeBuilder(ModelBuilder):
                         else:
                             self.pdfModes[b] = "binned"
                 elif shape.InheritsFrom("RooDataSet"):
+                    print("datset")
                     shapeTypes.append("RooDataSet")
                     shapeObs[self.argSetToString(shape.get())] = shape.get()
                     norm = shape.sumEntries()
                     if p == self.options.dataname:
                         self.pdfModes[b] = "unbinned"
                 elif shape.InheritsFrom("TTree"):
+                    print("tree")
                     shapeTypes.append("TTree")
                     if p == self.options.dataname:
                         self.pdfModes[b] = "unbinned"
                 elif shape.InheritsFrom("RooAbsPdf"):
                     shapeTypes.append("RooAbsPdf")
+                    print("RooAbsPdf")
                 elif shape.InheritsFrom("CMSHistFunc"):
                     shapeTypes.append("CMSHistFunc")
+                    print("CMSHistFunc")
                 else:
                     raise RuntimeError("This method currently supports only TH1s, RooDataHists and RooAbsPdfs")
                 if norm != 0:
@@ -561,10 +568,12 @@ class ShapeBuilder(ModelBuilder):
                     if i not in bgbins:
                         stderr.write("Channel %s has bin %d filled in data but empty in all backgrounds\n" % (b, i))
         if shapeTypes.count("TH1"):
+            print("here1")
             self.TH1Observables = {}
             self.out.binVars = ROOT.RooArgSet()
             self.out.maxbins = max([shapeBins[k] for k in shapeBins.keys()])
             if self.options.optimizeTemplateBins:
+                print("here2")
                 if self.options.verbose > 1:
                     stderr.write("Will use binning variable CMS_th1x with %d bins\n" % self.out.maxbins)
                 self.doVar("CMS_th1x[0,%d]" % self.out.maxbins)
@@ -574,6 +583,7 @@ class ShapeBuilder(ModelBuilder):
                 for b in shapeBins:
                     self.TH1Observables[b] = "CMS_th1x"
             else:
+                print("here3")
                 for b in shapeBins:
                     binVar = "CMS_th1x_%s" % b
                     if self.options.verbose > 1:
@@ -607,6 +617,7 @@ class ShapeBuilder(ModelBuilder):
             self.out.safe_import(self.out.binVars)
         else:
             self.out.mode = "binned"
+            print("here4")
             if self.options.verbose > 1:
                 stderr.write("Will make a binned dataset\n")
             if self.options.verbose > 1:
@@ -614,6 +625,9 @@ class ShapeBuilder(ModelBuilder):
             if len(list(shapeObs.keys())) != 1:
                 raise RuntimeError("There's more than once choice of observables: %s\n" % str(list(shapeObs.keys())))
             self.out.binVars = list(shapeObs.values())[0]
+            self.out.binVars[0].Print()
+            self.out.binVars[0].setBins(320) #MODIFICATO DA RUBEN
+            self.out.binVars[0].Print()
             self.out.safe_import(self.out.binVars)
         # keep hold of pdf_norm renaming
         self.DC.pdfnorms = self.norm_rename_map.copy()
